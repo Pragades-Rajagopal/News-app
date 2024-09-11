@@ -1,21 +1,36 @@
 import 'package:get_it/get_it.dart';
+import 'package:news_app/features/daily_news/data/data_sources/local/app_database.dart';
 import 'package:news_app/features/daily_news/data/data_sources/remote/news_api_service.dart';
 import 'package:dio/dio.dart';
 import 'package:news_app/features/daily_news/data/repository/article_repository_impl.dart';
 import 'package:news_app/features/daily_news/domain/repository/article_repository.dart';
 import 'package:news_app/features/daily_news/domain/usecases/get_article.dart';
+import 'package:news_app/features/daily_news/domain/usecases/get_saved_article.dart';
+import 'package:news_app/features/daily_news/domain/usecases/remove_article.dart';
+import 'package:news_app/features/daily_news/domain/usecases/save_article.dart';
+import 'package:news_app/features/daily_news/presentation/bloc/article/local/local_article_bloc.dart';
 import 'package:news_app/features/daily_news/presentation/bloc/article/remote/remote_article_bloc.dart';
 
-final s1 = GetIt.instance;
+final sl = GetIt.instance;
 
 Future<void> initDependency() async {
+  // Initialize database
+  final database =
+      await $FloorAppDatabase.databaseBuilder('app_database.db').build();
+  sl.registerSingleton<AppDatabase>(database);
   // Dio registry
-  s1.registerSingleton<Dio>(Dio());
+  sl.registerSingleton<Dio>(Dio());
   // Dependencies registry
-  s1.registerSingleton<NewsApiService>(NewsApiService(s1()));
-  s1.registerSingleton<ArticleRepository>(ArticleRepositoryImpl(s1()));
-  s1.registerSingleton<GetArticleUseCase>(GetArticleUseCase(s1()));
+  sl.registerSingleton<NewsApiService>(NewsApiService(sl()));
+  sl.registerSingleton<ArticleRepository>(ArticleRepositoryImpl(sl(), sl()));
+  // Usecases
+  sl.registerSingleton<GetArticleUseCase>(GetArticleUseCase(sl()));
+  sl.registerSingleton<GetSavedArticleUseCase>(GetSavedArticleUseCase(sl()));
+  sl.registerSingleton<SaveArticleUseCase>(SaveArticleUseCase(sl()));
+  sl.registerSingleton<RemoveArticleUseCase>(RemoveArticleUseCase(sl()));
   // Bloc cannot be resgistered as singleton, because bloc would
   // return a new instance when the state is changed
-  s1.registerFactory<RemoteArticlesBloc>(() => RemoteArticlesBloc(s1()));
+  sl.registerFactory<RemoteArticlesBloc>(() => RemoteArticlesBloc(sl()));
+  sl.registerFactory<LocalArticleBloc>(
+      () => LocalArticleBloc(sl(), sl(), sl()));
 }
